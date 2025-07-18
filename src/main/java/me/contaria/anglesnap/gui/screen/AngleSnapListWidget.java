@@ -166,7 +166,7 @@ public class AngleSnapListWidget extends ElementListWidget<AngleSnapListWidget.A
             });
             this.yaw.setDrawsBackground(false);
             this.yaw.setEditableColor(Colors.WHITE);
-            this.yaw.setUneditableColor(Colors.WHITE);
+            this.yaw.setUneditableColor(Colors.LIGHT_GRAY);
 
             this.pitch = this.addChild(new TextFieldWidget(
                     this.client.textRenderer,
@@ -184,7 +184,7 @@ public class AngleSnapListWidget extends ElementListWidget<AngleSnapListWidget.A
             });
             this.pitch.setDrawsBackground(false);
             this.pitch.setEditableColor(Colors.WHITE);
-            this.pitch.setUneditableColor(Colors.WHITE);
+            this.pitch.setUneditableColor(Colors.LIGHT_GRAY);
 
             this.icon = this.addChild(new IconButtonWidget(Text.empty(), button -> ((IconButtonWidget) button).setTexture(this.angle.nextIcon()), this.angle.getIcon()));
 
@@ -198,7 +198,7 @@ public class AngleSnapListWidget extends ElementListWidget<AngleSnapListWidget.A
             this.color.setChangedListener(color -> this.angle.color = this.parseColor(color));
             this.color.setTextPredicate(color -> color.length() <= (color.startsWith("#") ? 9 : 8));
             this.color.setDrawsBackground(false);
-            this.color.setEditableColor(Colors.WHITE);
+            this.color.setEditableColor(this.angle.color);
             this.color.setUneditableColor(Colors.WHITE);
 
             this.edit = this.addChild(new IconButtonWidget(EDIT_TEXT, button -> this.toggleEditing(), EDIT_TEXTURE));
@@ -210,6 +210,23 @@ public class AngleSnapListWidget extends ElementListWidget<AngleSnapListWidget.A
 
         private String colorToString(int color) {
             return String.format("#%08X", Integer.rotateLeft(color, 8));
+        }
+
+        public static int darkenColor(int argbColor, float factor) {
+            int alpha = (argbColor >> 24) & 0xFF;
+            int red = (argbColor >> 16) & 0xFF;
+            int green = (argbColor >> 8) & 0xFF;
+            int blue = argbColor & 0xFF;
+
+            red = (int) (red * factor);
+            green = (int) (green * factor);
+            blue = (int) (blue * factor);
+
+            red = Math.max(0, Math.min(255, red));
+            green = Math.max(0, Math.min(255, green));
+            blue = Math.max(0, Math.min(255, blue));
+
+            return (alpha << 24) | (red << 16) | (green << 8) | blue;
         }
 
         private int parseColor(String color) {
@@ -244,6 +261,9 @@ public class AngleSnapListWidget extends ElementListWidget<AngleSnapListWidget.A
                 this.yaw.setText(String.valueOf(this.angle.yaw));
                 this.pitch.setText(String.valueOf(this.angle.pitch));
                 this.color.setText(this.colorToString(this.angle.color));
+                this.color.setEditableColor(this.angle.color);
+                this.color.setUneditableColor(darkenColor(this.angle.color,0.4f));
+                this.name.setUneditableColor(this.angle.color);
             }
 
             this.edit.visible = !editing;
@@ -287,7 +307,7 @@ public class AngleSnapListWidget extends ElementListWidget<AngleSnapListWidget.A
             if (this.editing) {
                 this.renderWidgetAt(context, mouseX, mouseY, tickDelta, widget, x, y);
             } else {
-                context.drawText(this.client.textRenderer, widget.getText(), x, y, Colors.WHITE, true);
+                context.drawText(this.client.textRenderer, widget.getText(), x, y, widget.editable ? widget.editableColor : widget.uneditableColor, true);
             }
         }
 
@@ -317,6 +337,7 @@ public class AngleSnapListWidget extends ElementListWidget<AngleSnapListWidget.A
 
         private void renderHexadecimalWidgetAt(DrawContext context, int mouseX, int mouseY, float tickDelta, TextFieldWidget widget, int x, int y) {
             if (this.isHexadecimalOrEmpty(widget.getText())) {
+                widget.setEditableColor(parseColor(widget.getText()));
                 this.renderTextWidgetAt(context, mouseX, mouseY, tickDelta, widget, x, y);
             } else {
                 widget.setEditableColor(Colors.LIGHT_RED);

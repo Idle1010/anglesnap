@@ -13,9 +13,7 @@ import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.option.StickyKeyBinding;
-import net.minecraft.client.render.RenderLayer;
-import net.minecraft.client.render.RenderTickCounter;
-import net.minecraft.client.render.VertexConsumer;
+import net.minecraft.client.render.*;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Colors;
 import net.minecraft.util.Identifier;
@@ -124,7 +122,8 @@ public class AngleSnap implements ClientModInitializer {
         Matrix4f matrix4f = matrices.peek().getPositionMatrix();
         MinecraftClient client = MinecraftClient.getInstance();
         RenderLayer layer = RenderLayer.getCelestial(angle.getIcon());
-        VertexConsumer consumer = client.getBufferBuilders().getEffectVertexConsumers().getBuffer(layer);
+        VertexConsumerProvider.Immediate immediate = getVertexConsumer();
+        VertexConsumer consumer = immediate.getBuffer(layer);
         consumer.vertex(matrix4f, -1.0f, -1.0f, 0.0f).color(angle.color).texture(0.0f, 0.0f);
         consumer.vertex(matrix4f, -1.0f, 1.0f, 0.0f).color(angle.color).texture(0.0f, 1.0f);
         consumer.vertex(matrix4f, 1.0f, 1.0f, 0.0f).color(angle.color).texture(1.0f, 1.0f);
@@ -132,6 +131,10 @@ public class AngleSnap implements ClientModInitializer {
 
         matrices.scale(1.0f / scale, 1.0f / -scale, 1.0f / scale);
         matrices.pop();
+    }
+
+    private static VertexConsumerProvider.Immediate getVertexConsumer() {
+        return MinecraftClient.getInstance().getBufferBuilders().getEffectVertexConsumers();
     }
 
     private static void drawName(WorldRenderContext context, Vector3f pos, Quaternionf rotation, AngleEntry angle, float scale) {
@@ -147,11 +150,12 @@ public class AngleSnap implements ClientModInitializer {
 
         Matrix4f matrix4f = matrices.peek().getPositionMatrix();
         MinecraftClient client = MinecraftClient.getInstance();
+        VertexConsumerProvider.Immediate immediate = getVertexConsumer();
         TextRenderer textRenderer = client.textRenderer;
         float x = -textRenderer.getWidth(angle.name) / 2.0f;
         int backgroundColor = (int) (client.options.getTextBackgroundOpacity(0.25f) * 255.0f) << 24;
         textRenderer.draw(
-                angle.name, x, -15.0f, Colors.WHITE, false, matrix4f, client.getBufferBuilders().getEffectVertexConsumers(), TextRenderer.TextLayerType.SEE_THROUGH, backgroundColor, 15
+                angle.name, x, -15.0f, Colors.WHITE, false, matrix4f, immediate, TextRenderer.TextLayerType.SEE_THROUGH, backgroundColor, LightmapTextureManager.MAX_LIGHT_COORDINATE
         );
 
         matrices.scale(1.0f / scale, 1.0f / -scale, 1.0f / scale);
